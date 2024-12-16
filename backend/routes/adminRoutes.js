@@ -5,12 +5,15 @@ const Package = require('../models/Package');
 const Booking = require('../models/Booking');
 const adminAuth = require('../middleware/adminAuth');
 
+// Apply adminAuth middleware to all routes
+router.use(adminAuth);
+
 // Get all packages (admin view)
 router.get('/packages', async (req, res) => {
   try {
     const packages = await Package.find();
     console.log('Found packages:', packages); // Debug log
-    res.json(packages);
+    res.json({ packages }); // Wrap in packages object to match frontend expectations
   } catch (error) {
     console.error('Error fetching packages:', error);
     res.status(500).json({ 
@@ -21,7 +24,7 @@ router.get('/packages', async (req, res) => {
 });
 
 // Create a new package
-router.post('/packages', adminAuth, async (req, res) => {
+router.post('/packages', async (req, res) => {
   try {
     const newPackage = new Package(req.body);
     const savedPackage = await newPackage.save();
@@ -32,7 +35,7 @@ router.post('/packages', adminAuth, async (req, res) => {
 });
 
 // Update a package
-router.put('/packages/:id', adminAuth, async (req, res) => {
+router.put('/packages/:id', async (req, res) => {
   try {
     const updatedPackage = await Package.findByIdAndUpdate(
       req.params.id, 
@@ -51,7 +54,7 @@ router.put('/packages/:id', adminAuth, async (req, res) => {
 });
 
 // Delete a package
-router.delete('/packages/:id', adminAuth, async (req, res) => {
+router.delete('/packages/:id', async (req, res) => {
   try {
     const deletedPackage = await Package.findByIdAndDelete(req.params.id);
     
@@ -69,7 +72,7 @@ router.delete('/packages/:id', adminAuth, async (req, res) => {
 });
 
 // Get all bookings (admin view)
-router.get('/bookings', adminAuth, async (req, res) => {
+router.get('/bookings', async (req, res) => {
   try {
     const bookings = await Booking.find()
       .populate('packageId', 'title price')
@@ -80,7 +83,7 @@ router.get('/bookings', adminAuth, async (req, res) => {
   }
 });
 
-router.get('/analytics', adminAuth, async (req, res) => {
+router.get('/analytics', async (req, res) => {
   try {
     const totalBookings = await Booking.countDocuments();
     const totalRevenue = await Booking.aggregate([

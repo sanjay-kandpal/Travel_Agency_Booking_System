@@ -1,4 +1,4 @@
-// 2. Update middleware/adminAuth.js
+// middleware/adminAuth.js
 const adminAuth = (req, res, next) => {
   try {
     // Get authorization header
@@ -6,16 +6,14 @@ const adminAuth = (req, res, next) => {
 
     if (!authHeader) {
       return res.status(401).json({
-        error: 'Authentication required',
-        message: 'Please provide admin credentials'
+        error: 'Authentication required'
       });
     }
 
     // Check if it's Basic auth
     if (!authHeader.startsWith('Basic ')) {
       return res.status(401).json({
-        error: 'Invalid authentication method',
-        message: 'Basic authentication required'
+        error: 'Invalid authentication method'
       });
     }
 
@@ -24,22 +22,17 @@ const adminAuth = (req, res, next) => {
     const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
     const [username, password] = credentials.split(':');
 
-    // Check credentials against environment variables
-    const validUsername = process.env.ADMIN_USERNAME || 'admin';
-    const validPassword = process.env.ADMIN_PASSWORD || 'adminpass';
-
-    if (username === validUsername && password === validPassword) {
+    // Hardcoded credentials
+    if (username === 'admin' && password === 'admin123') {
       next();
     } else {
       res.status(401).json({
-        error: 'Authentication failed',
-        message: 'Invalid admin credentials'
+        error: 'Invalid credentials'
       });
     }
   } catch (error) {
     res.status(500).json({
-      error: 'Server error',
-      message: 'An error occurred during authentication'
+      error: 'Server error'
     });
   }
 };

@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { adminService } from '../../services/api';
 import { LoginForm } from '../../components/admin/LoginForm';
-import { DashboardContent } from '../../components/admin/DashboardContent';
+import { CreatePackageForm } from '../../components/admin/CreatePackageForm';
+import { PackagesList } from '../../components/admin/PackagesList';
+import { BookingsList } from '../../components/admin/BookingsList';
 
 export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -9,38 +11,31 @@ export default function AdminDashboard() {
   const [packages, setPackages] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [adminCredentials, setAdminCredentials] = useState(null);
-  const [newPackage, setNewPackage] = useState({
-    title: '',
-    description: '',
-    price: 0,
-    imageUrl: '',
-    availableDates: [],
-    difficulty: 'Easy',
-    maxTravelers: 20
-  });
 
   const handleLogin = async (credentials) => {
     try {
-      const packagesResponse = await adminService.getAllPackages(
-        credentials.username, 
-        credentials.password
-      );
-      
-      const bookingsResponse = await adminService.getAllBookings(
-        credentials.username, 
-        credentials.password
-      );
-      
-      const packagesData = packagesResponse.data.packages || packagesResponse.data || [];
-      setPackages(packagesData);
-      setBookings(bookingsResponse.data || []);
-      setAdminCredentials(credentials);
-      setIsAuthenticated(true);
-      setError(null);
+      if (adminService.validateCredentials(credentials.username, credentials.password)) {
+        const packagesResponse = await adminService.getAllPackages(
+          credentials.username,
+          credentials.password
+        );
+
+        const bookingsResponse = await adminService.getAllBookings(
+          credentials.username,
+          credentials.password
+        );
+
+        setPackages(packagesResponse.data.packages || packagesResponse.data || []);
+        setBookings(bookingsResponse.data || []);
+        setAdminCredentials(credentials);
+        setIsAuthenticated(true);
+        setError(null);
+      } else {
+        setError('Invalid credentials');
+      }
     } catch (err) {
-      setError('Authentication failed. Check your credentials.');
-      setIsAuthenticated(false);
-      console.error('Admin login error:', err);
+      setError('Authentication failed. Please check your credentials.');
+      console.error('Login error:', err);
     }
   };
 
@@ -52,31 +47,19 @@ export default function AdminDashboard() {
     setError(null);
   };
 
-  const handleCreatePackage = async (e) => {
-    e.preventDefault();
+  const handleCreatePackage = async (packageData) => {
     try {
       await adminService.createPackage(
-        newPackage,
+        packageData,
         adminCredentials.username,
         adminCredentials.password
       );
 
-      setNewPackage({
-        title: '',
-        description: '',
-        price: 0,
-        imageUrl: '',
-        availableDates: [],
-        difficulty: 'Easy',
-        maxTravelers: 20
-      });
-
       const packagesResponse = await adminService.getAllPackages(
-        adminCredentials.username, 
+        adminCredentials.username,
         adminCredentials.password
       );
-      const packagesData = packagesResponse.data.packages || packagesResponse.data || [];
-      setPackages(packagesData);
+      setPackages(packagesResponse.data.packages || packagesResponse.data || []);
       setError(null);
     } catch (err) {
       setError('Failed to create package. Please check your input and try again.');
@@ -87,35 +70,58 @@ export default function AdminDashboard() {
   const handleDeletePackage = async (id) => {
     try {
       await adminService.deletePackage(
-        id, 
+        id,
         adminCredentials.username,
         adminCredentials.password
       );
+
       const packagesResponse = await adminService.getAllPackages(
-        adminCredentials.username, 
+        adminCredentials.username,
         adminCredentials.password
       );
-      const packagesData = packagesResponse.data.packages || packagesResponse.data || [];
-      setPackages(packagesData);
+      setPackages(packagesResponse.data.packages || packagesResponse.data || []);
       setError(null);
     } catch (err) {
       setError('Failed to delete package');
-      console.error('Package delete error:', err);
+      console.error('Package deletion error:', err);
     }
   };
 
-  return isAuthenticated ? (
-    <DashboardContent
-      onLogout={handleLogout}
-      error={error}
-      newPackage={newPackage}
-      setNewPackage={setNewPackage}
-      onCreatePackage={handleCreatePackage}
-      packages={packages}
-      onDeletePackage={handleDeletePackage}
-      bookings={bookings}
-    />
-  ) : (
-    <LoginForm onLogin={handleLogin} error={error} />
+  if (!isAuthenticated) {
+    return <LoginForm onLogin={handleLogin} error={error} />;
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-100 py-6">
+      <div className="container mx-auto px-4">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+          <button
+            onClick={handleLogout}
+            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+          >
+            Logout
+          </button>
+        </div>
+
+        {error && (
+          <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            {error}
+          </div>
+        )}
+
+        <CreatePackageForm
+          onSubmit={handleCreatePackage}
+          error={error}
+        />
+
+        <PackagesList
+          packages={packages}
+          onDelete={handleDeletePackage}
+        />
+
+        <BookingsList bookings={bookings} />
+      </div>
+    </div>
   );
 }

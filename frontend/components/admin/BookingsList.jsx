@@ -1,5 +1,3 @@
-import React from 'react';
-
 export const BookingsList = ({ bookings }) => {
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg">
@@ -19,8 +17,24 @@ export const BookingsList = ({ bookings }) => {
               </tr>
             </thead>
             <tbody>
-              {bookings.map(booking => (
-                <BookingRow key={booking._id} booking={booking} />
+              {bookings.map((booking) => (
+                <tr key={booking._id}>
+                  <td className="border p-2">{booking.customerName}</td>
+                  <td className="border p-2">
+                    {booking.packageId ? booking.packageId.title : 'N/A'}
+                  </td>
+                  <td className="border p-2 text-center">{booking.numberOfTravelers}</td>
+                  <td className="border p-2 text-right">${booking.totalPrice}</td>
+                  <td className="border p-2 text-center">
+                    <span className={`px-2 py-1 rounded ${
+                      booking.status === 'Confirmed' ? 'bg-green-100 text-green-800' :
+                      booking.status === 'Cancelled' ? 'bg-red-100 text-red-800' :
+                      'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {booking.status}
+                    </span>
+                  </td>
+                </tr>
               ))}
             </tbody>
           </table>

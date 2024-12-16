@@ -1,3 +1,4 @@
+// components/admin/LoginForm.jsx
 import React, { useState } from 'react';
 
 export const LoginForm = ({ onLogin, error }) => {
@@ -19,7 +20,7 @@ export const LoginForm = ({ onLogin, error }) => {
         <p className="text-sm text-blue-800">
           <strong>Development Credentials:</strong><br />
           Username: admin<br />
-          Password: adminpass
+          Password: admin123
         </p>
       </div>
 
@@ -49,7 +50,7 @@ export const LoginForm = ({ onLogin, error }) => {
                 password: e.target.value
               })}
               className="w-full border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="adminpass"
+              placeholder="admin123"
               required
             />
           </div>

@@ -1,44 +1,65 @@
-// 1. Update services/api.js
 import axios from 'axios';
 
 const API_URL = 'http://localhost:5000/api';
 
-// Helper function to create authenticated headers
 const createAuthHeader = (username, password) => {
   const credentials = btoa(`${username}:${password}`);
   return {
-    Authorization: `Basic ${credentials}`
+    Authorization: `Basic ${credentials}`,
+    'Content-Type': 'application/json'
   };
 };
 
 export const adminService = {
-  getAllPackages: (username, password) => {
-    return axios.get(`${API_URL}/admin/packages`, {
-      headers: createAuthHeader(username, password)
-    });
+  validateCredentials: (username, password) => {
+    return username === 'admin' && password === 'admin123';
   },
 
-  createPackage: (packageData, username, password) => {
-    return axios.post(`${API_URL}/admin/packages`, packageData, {
-      headers: createAuthHeader(username, password)
-    });
+  getAllPackages: async (username, password) => {
+    try {
+      const response = await axios.get(`${API_URL}/admin/packages`, {
+        headers: createAuthHeader(username, password)
+      });
+      return response;
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
   },
 
-  updatePackage: (id, packageData, username, password) => {
-    return axios.put(`${API_URL}/admin/packages/${id}`, packageData, {
-      headers: createAuthHeader(username, password)
-    });
+  getAllBookings: async (username, password) => {
+    try {
+      const response = await axios.get(`${API_URL}/admin/bookings`, {
+        headers: createAuthHeader(username, password)
+      });
+      return response;
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
   },
 
-  deletePackage: (id, username, password) => {
-    return axios.delete(`${API_URL}/admin/packages/${id}`, {
-      headers: createAuthHeader(username, password)
-    });
+  createPackage: async (packageData, username, password) => {
+    try {
+      const response = await axios.post(`${API_URL}/admin/packages`, packageData, {
+        headers: createAuthHeader(username, password)
+      });
+      return response;
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
   },
 
-  getAllBookings: (username, password) => {
-    return axios.get(`${API_URL}/admin/bookings`, {
-      headers: createAuthHeader(username, password)
-    });
+  deletePackage: async (id, username, password) => {
+    try {
+      const response = await axios.delete(`${API_URL}/admin/packages/${id}`, {
+        headers: createAuthHeader(username, password)
+      });
+      return response;
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
   }
 };
