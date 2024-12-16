@@ -3,7 +3,10 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+// Update server.js to include admin routes
+const adminRoutes = require('./routes/adminRoutes');
 require('dotenv').config();
+
 
 const app = express();
 
@@ -23,8 +26,10 @@ mongoose.connect(process.env.MONGODB_URI, {
 const packageRoutes = require('./routes/packageRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 
+app.use('/api/admin', adminRoutes);
 app.use('/api/packages', packageRoutes);
 app.use('/api/bookings', bookingRoutes);
+
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

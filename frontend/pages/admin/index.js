@@ -1,6 +1,6 @@
+// pages/admin/index.js
 import React, { useState, useEffect } from 'react';
-import { adminService  } from '../../services/api';
-
+import { adminService } from '../../services/api';
 
 export default function AdminDashboard() {
   const [packages, setPackages] = useState([]);
@@ -9,18 +9,27 @@ export default function AdminDashboard() {
     username: '',
     password: ''
   });
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [error, setError] = useState(null);
-  const [editingPackage, setEditingPackage] = useState(null);
+  const [newPackage, setNewPackage] = useState({
+    title: '',
+    description: '',
+    price: 0,
+    imageUrl: '',
+    availableDates: [],
+    difficulty: 'Easy',
+    maxTravelers: 20
+  });
 
-  const fetchAdminData = async () => {
+  const handleLogin = async (e) => {
+    e.preventDefault();
     try {
-      // Fetch packages
+      // Verify credentials by attempting to fetch data
       const packagesResponse = await adminService.getAllPackages(
         credentials.username, 
         credentials.password
       );
       
-      // Fetch bookings
       const bookingsResponse = await adminService.getAllBookings(
         credentials.username, 
         credentials.password
@@ -28,17 +37,33 @@ export default function AdminDashboard() {
       
       setPackages(packagesResponse.data);
       setBookings(bookingsResponse.data);
+      setIsAuthenticated(true);
       setError(null);
     } catch (err) {
       setError('Authentication failed. Check your credentials.');
-      console.error('Admin data fetch error:', err);
+      setIsAuthenticated(false);
+      console.error('Admin login error:', err);
     }
   };
 
-  const handleCreateOrUpdatePackage = async (e) => {
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setCredentials({ username: '', password: '' });
+    setPackages([]);
+    setBookings([]);
+  };
+
+  const handleCreatePackage = async (e) => {
     e.preventDefault();
     try {
-      const packageData = editingPackage || {
+      await adminService.createPackage(
+        newPackage,
+        credentials.username,
+        credentials.password
+      );
+
+      // Reset form
+      setNewPackage({
         title: '',
         description: '',
         price: 0,
@@ -46,34 +71,18 @@ export default function AdminDashboard() {
         availableDates: [],
         difficulty: 'Easy',
         maxTravelers: 20
-      };
+      });
 
-      let response;
-      if (packageData._id) {
-        // Update existing package
-        response = await adminService.updatePackage(
-          packageData._id,
-          packageData,
-          credentials.username,
-          credentials.password
-        );
-      } else {
-        // Create new package
-        response = await adminService.createPackage(
-          packageData,
-          credentials.username,
-          credentials.password
-        );
-      }
-
-      // Refresh data
-      fetchAdminData();
-      
-      // Reset editing state
-      setEditingPackage(null);
+      // Refresh package list
+      const packagesResponse = await adminService.getAllPackages(
+        credentials.username, 
+        credentials.password
+      );
+      setPackages(packagesResponse.data);
+      setError(null);
     } catch (err) {
-      setError('Failed to create/update package');
-      console.error('Package operation error:', err);
+      setError('Failed to create package. Please check your input and try again.');
+      console.error('Package creation error:', err);
     }
   };
 
@@ -84,135 +93,184 @@ export default function AdminDashboard() {
         credentials.username, 
         credentials.password
       );
-      fetchAdminData();
+      const packagesResponse = await adminService.getAllPackages(
+        credentials.username, 
+        credentials.password
+      );
+      setPackages(packagesResponse.data);
+      setError(null);
     } catch (err) {
       setError('Failed to delete package');
       console.error('Package delete error:', err);
     }
   };
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
+  // Login Form Component
+  const LoginForm = () => (
+    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-lg">
+      <h2 className="text-2xl font-bold mb-6 text-center">Admin Login</h2>
+      <form onSubmit={handleLogin}>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-gray-700 mb-2">Username</label>
+            <input
+              type="text"
+              value={credentials.username}
+              onChange={(e) => setCredentials({
+                ...credentials,
+                username: e.target.value
+              })}
+              className="w-full border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-gray-700 mb-2">Password</label>
+            <input
+              type="password"
+              value={credentials.password}
+              onChange={(e) => setCredentials({
+                ...credentials,
+                password: e.target.value
+              })}
+              className="w-full border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+              {error}
+            </div>
+          )}
+          <button
+            type="submit"
+            className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
+          >
+            Login
+          </button>
+        </div>
+      </form>
+    </div>
+  );
 
-      {/* Authentication Section */}
-      <div className="mb-6 flex items-center">
-        <input
-          type="text"
-          placeholder="Admin Username"
-          value={credentials.username}
-          onChange={(e) => setCredentials({
-            ...credentials, 
-            username: e.target.value
-          })}
-          className="border p-2 mr-2"
-        />
-        <input
-          type="password"
-          placeholder="Admin Password"
-          value={credentials.password}
-          onChange={(e) => setCredentials({
-            ...credentials, 
-            password: e.target.value
-          })}
-          className="border p-2 mr-2"
-        />
+  // Admin Dashboard Content
+  const DashboardContent = () => (
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
         <button
-          onClick={fetchAdminData}
-          className="bg-blue-500 text-white px-4 py-2 rounded"
+          onClick={handleLogout}
+          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
         >
-          Login
+          Logout
         </button>
       </div>
 
-      {/* Create Package Form */}
-      <form onSubmit={handleCreatePackage} className="mb-8">
-        <div className="grid grid-cols-2 gap-4">
-          <input
-            type="text"
-            placeholder="Package Title"
-            value={newPackage.title}
-            onChange={(e) => setNewPackage({
-              ...newPackage, 
-              title: e.target.value
-            })}
-            className="border p-2"
-            required
-          />
-          <input
-            type="number"
-            placeholder="Price"
-            value={newPackage.price}
-            onChange={(e) => setNewPackage({
-              ...newPackage, 
-              price: parseFloat(e.target.value)
-            })}
-            className="border p-2"
-            required
-          />
-          <textarea
-            placeholder="Description"
-            value={newPackage.description}
-            onChange={(e) => setNewPackage({
-              ...newPackage, 
-              description: e.target.value
-            })}
-            className="border p-2 col-span-2"
-            required
-          />
-          <input
-            type="text"
-            placeholder="Image URL"
-            value={newPackage.imageUrl}
-            onChange={(e) => setNewPackage({
-              ...newPackage, 
-              imageUrl: e.target.value
-            })}
-            className="border p-2 col-span-2"
-            required
-          />
-          <select
-            value={newPackage.difficulty}
-            onChange={(e) => setNewPackage({
-              ...newPackage, 
-              difficulty: e.target.value
-            })}
-            className="border p-2"
-          >
-            <option value="Easy">Easy</option>
-            <option value="Moderate">Moderate</option>
-            <option value="Challenging">Challenging</option>
-          </select>
-          <input
-            type="number"
-            placeholder="Max Travelers"
-            value={newPackage.maxTravelers}
-            onChange={(e) => setNewPackage({
-              ...newPackage, 
-              maxTravelers: parseInt(e.target.value)
-            })}
-            className="border p-2"
-          />
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
         </div>
-        <button 
-          type="submit" 
-          className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
-        >
-          Create Package
-        </button>
-      </form>
+      )}
+
+      {/* Create Package Form */}
+      <div className="bg-white p-6 rounded-lg shadow-lg mb-8">
+        <h2 className="text-2xl font-bold mb-4">Create New Package</h2>
+        <form onSubmit={handleCreatePackage}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input
+              type="text"
+              placeholder="Package Title"
+              value={newPackage.title}
+              onChange={(e) => setNewPackage({
+                ...newPackage, 
+                title: e.target.value
+              })}
+              className="border p-2 rounded"
+              required
+            />
+            <input
+              type="number"
+              placeholder="Price"
+              value={newPackage.price}
+              onChange={(e) => setNewPackage({
+                ...newPackage, 
+                price: parseFloat(e.target.value)
+              })}
+              className="border p-2 rounded"
+              required
+            />
+            <textarea
+              placeholder="Description"
+              value={newPackage.description}
+              onChange={(e) => setNewPackage({
+                ...newPackage, 
+                description: e.target.value
+              })}
+              className="border p-2 col-span-2 rounded"
+              required
+            />
+            <input
+              type="text"
+              placeholder="Image URL"
+              value={newPackage.imageUrl}
+              onChange={(e) => setNewPackage({
+                ...newPackage, 
+                imageUrl: e.target.value
+              })}
+              className="border p-2 col-span-2 rounded"
+              required
+            />
+            <select
+              value={newPackage.difficulty}
+              onChange={(e) => setNewPackage({
+                ...newPackage, 
+                difficulty: e.target.value
+              })}
+              className="border p-2 rounded"
+            >
+              <option value="Easy">Easy</option>
+              <option value="Moderate">Moderate</option>
+              <option value="Challenging">Challenging</option>
+            </select>
+            <input
+              type="number"
+              placeholder="Max Travelers"
+              value={newPackage.maxTravelers}
+              onChange={(e) => setNewPackage({
+                ...newPackage, 
+                maxTravelers: parseInt(e.target.value)
+              })}
+              className="border p-2 rounded"
+              required
+            />
+          </div>
+          <button 
+            type="submit" 
+            className="mt-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+          >
+            Create Package
+          </button>
+        </form>
+      </div>
 
       {/* Packages List */}
-      <div>
+      <div className="bg-white p-6 rounded-lg shadow-lg mb-8">
         <h2 className="text-2xl font-bold mb-4">Existing Packages</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {packages.map(pkg => (
-            <div key={pkg._id} className="border p-4 rounded">
-              <h3 className="font-bold">{pkg.title}</h3>
-              <p>${pkg.price}</p>
+            <div key={pkg._id} className="border p-4 rounded shadow">
+              <img 
+                src={pkg.imageUrl} 
+                alt={pkg.title}
+                className="w-full h-48 object-cover rounded mb-4"
+              />
+              <h3 className="font-bold text-lg">{pkg.title}</h3>
+              <p className="text-gray-600 mb-2">${pkg.price}</p>
+              <p className="text-sm text-gray-500 mb-2">Difficulty: {pkg.difficulty}</p>
+              <p className="text-sm text-gray-500 mb-2">Max Travelers: {pkg.maxTravelers}</p>
               <button
                 onClick={() => handleDeletePackage(pkg._id)}
-                className="mt-2 bg-red-500 text-white px-3 py-1 rounded"
+                className="mt-2 bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
               >
                 Delete
               </button>
@@ -222,31 +280,45 @@ export default function AdminDashboard() {
       </div>
 
       {/* Bookings List */}
-      <div className="mt-8">
+      <div className="bg-white p-6 rounded-lg shadow-lg">
         <h2 className="text-2xl font-bold mb-4">Bookings</h2>
-        <table className="w-full border">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="border p-2">Customer Name</th>
-              <th className="border p-2">Package</th>
-              <th className="border p-2">Travelers</th>
-              <th className="border p-2">Total Price</th>
-            </tr>
-          </thead>
-          <tbody>
-            {bookings.map(booking => (
-              <tr key={booking._id}>
-                <td className="border p-2">{booking.customerName}</td>
-                <td className="border p-2">
-                  {booking.packageId ? booking.packageId.title : 'N/A'}
-                </td>
-                <td className="border p-2">{booking.numberOfTravelers}</td>
-                <td className="border p-2">${booking.totalPrice}</td>
+        <div className="overflow-x-auto">
+          <table className="w-full border">
+            <thead>
+              <tr className="bg-gray-50">
+                <th className="border p-2 text-left">Customer Name</th>
+                <th className="border p-2 text-left">Package</th>
+                <th className="border p-2 text-center">Travelers</th>
+                <th className="border p-2 text-right">Total Price</th>
+                <th className="border p-2 text-center">Status</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {bookings.map(booking => (
+                <tr key={booking._id}>
+                  <td className="border p-2">{booking.customerName}</td>
+                  <td className="border p-2">
+                    {booking.packageId ? booking.packageId.title : 'N/A'}
+                  </td>
+                  <td className="border p-2 text-center">{booking.numberOfTravelers}</td>
+                  <td className="border p-2 text-right">${booking.totalPrice}</td>
+                  <td className="border p-2 text-center">
+                    <span className={`px-2 py-1 rounded ${
+                      booking.status === 'Confirmed' ? 'bg-green-100 text-green-800' :
+                      booking.status === 'Cancelled' ? 'bg-red-100 text-red-800' :
+                      'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {booking.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
+
+  return isAuthenticated ? <DashboardContent /> : <LoginForm />;
 }

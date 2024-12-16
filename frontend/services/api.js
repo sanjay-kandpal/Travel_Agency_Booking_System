@@ -1,43 +1,44 @@
-// services/api.js (Updated)
+// 1. Update services/api.js
 import axios from 'axios';
 
 const API_URL = 'http://localhost:5000/api';
 
-// Helper function to create authenticated axios instance
-const createAuthenticatedAxios = (username, password) => {
-  return axios.create({
-    baseURL: API_URL,
-    headers: {
-      Authorization: `Basic ${btoa(`${username}:${password}`)}`
-    }
-  });
+// Helper function to create authenticated headers
+const createAuthHeader = (username, password) => {
+  const credentials = btoa(`${username}:${password}`);
+  return {
+    Authorization: `Basic ${credentials}`
+  };
 };
 
 export const adminService = {
-  // Admin package operations
   getAllPackages: (username, password) => {
-    const authAxios = createAuthenticatedAxios(username, password);
-    return authAxios.get('/admin/packages');
+    return axios.get(`${API_URL}/admin/packages`, {
+      headers: createAuthHeader(username, password)
+    });
   },
 
   createPackage: (packageData, username, password) => {
-    const authAxios = createAuthenticatedAxios(username, password);
-    return authAxios.post('/admin/packages', packageData);
+    return axios.post(`${API_URL}/admin/packages`, packageData, {
+      headers: createAuthHeader(username, password)
+    });
   },
 
   updatePackage: (id, packageData, username, password) => {
-    const authAxios = createAuthenticatedAxios(username, password);
-    return authAxios.put(`/admin/packages/${id}`, packageData);
+    return axios.put(`${API_URL}/admin/packages/${id}`, packageData, {
+      headers: createAuthHeader(username, password)
+    });
   },
 
   deletePackage: (id, username, password) => {
-    const authAxios = createAuthenticatedAxios(username, password);
-    return authAxios.delete(`/admin/packages/${id}`);
+    return axios.delete(`${API_URL}/admin/packages/${id}`, {
+      headers: createAuthHeader(username, password)
+    });
   },
 
-  // Admin bookings operations
   getAllBookings: (username, password) => {
-    const authAxios = createAuthenticatedAxios(username, password);
-    return authAxios.get('/admin/bookings');
+    return axios.get(`${API_URL}/admin/bookings`, {
+      headers: createAuthHeader(username, password)
+    });
   }
 };
