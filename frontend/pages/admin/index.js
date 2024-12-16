@@ -1,45 +1,44 @@
 import React, { useState, useEffect } from 'react';
-import { packageService, bookingService } from '../../services/api';
+import { adminService  } from '../../services/api';
+
 
 export default function AdminDashboard() {
   const [packages, setPackages] = useState([]);
   const [bookings, setBookings] = useState([]);
-  const [newPackage, setNewPackage] = useState({
-    title: '',
-    description: '',
-    price: 0,
-    imageUrl: '',
-    availableDates: [],
-    difficulty: 'Easy',
-    maxTravelers: 20
-  });
   const [credentials, setCredentials] = useState({
     username: '',
     password: ''
   });
+  const [error, setError] = useState(null);
+  const [editingPackage, setEditingPackage] = useState(null);
 
-  const fetchData = async () => {
+  const fetchAdminData = async () => {
     try {
-      const packagesResponse = await packageService.getAllPackages();
-      const bookingsResponse = await bookingService.getAllBookings();
-      setPackages(packagesResponse.data);
-      setBookings(bookingsResponse.data);
-    } catch (error) {
-      console.error('Failed to fetch data:', error);
-    }
-  };
-
-  const handleCreatePackage = async (e) => {
-    e.preventDefault();
-    try {
-      await packageService.createPackage(
-        newPackage, 
+      // Fetch packages
+      const packagesResponse = await adminService.getAllPackages(
         credentials.username, 
         credentials.password
       );
-      fetchData();
-      // Reset form
-      setNewPackage({
+      
+      // Fetch bookings
+      const bookingsResponse = await adminService.getAllBookings(
+        credentials.username, 
+        credentials.password
+      );
+      
+      setPackages(packagesResponse.data);
+      setBookings(bookingsResponse.data);
+      setError(null);
+    } catch (err) {
+      setError('Authentication failed. Check your credentials.');
+      console.error('Admin data fetch error:', err);
+    }
+  };
+
+  const handleCreateOrUpdatePackage = async (e) => {
+    e.preventDefault();
+    try {
+      const packageData = editingPackage || {
         title: '',
         description: '',
         price: 0,
@@ -47,22 +46,48 @@ export default function AdminDashboard() {
         availableDates: [],
         difficulty: 'Easy',
         maxTravelers: 20
-      });
-    } catch (error) {
-      console.error('Failed to create package:', error);
+      };
+
+      let response;
+      if (packageData._id) {
+        // Update existing package
+        response = await adminService.updatePackage(
+          packageData._id,
+          packageData,
+          credentials.username,
+          credentials.password
+        );
+      } else {
+        // Create new package
+        response = await adminService.createPackage(
+          packageData,
+          credentials.username,
+          credentials.password
+        );
+      }
+
+      // Refresh data
+      fetchAdminData();
+      
+      // Reset editing state
+      setEditingPackage(null);
+    } catch (err) {
+      setError('Failed to create/update package');
+      console.error('Package operation error:', err);
     }
   };
 
   const handleDeletePackage = async (id) => {
     try {
-      await packageService.deletePackage(
+      await adminService.deletePackage(
         id, 
         credentials.username, 
         credentials.password
       );
-      fetchData();
-    } catch (error) {
-      console.error('Failed to delete package:', error);
+      fetchAdminData();
+    } catch (err) {
+      setError('Failed to delete package');
+      console.error('Package delete error:', err);
     }
   };
 
@@ -70,8 +95,8 @@ export default function AdminDashboard() {
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
 
-      {/* Admin Credentials */}
-      <div className="mb-6">
+      {/* Authentication Section */}
+      <div className="mb-6 flex items-center">
         <input
           type="text"
           placeholder="Admin Username"
@@ -90,8 +115,14 @@ export default function AdminDashboard() {
             ...credentials, 
             password: e.target.value
           })}
-          className="border p-2"
+          className="border p-2 mr-2"
         />
+        <button
+          onClick={fetchAdminData}
+          className="bg-blue-500 text-white px-4 py-2 rounded"
+        >
+          Login
+        </button>
       </div>
 
       {/* Create Package Form */}

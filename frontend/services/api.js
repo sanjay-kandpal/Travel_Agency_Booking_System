@@ -1,26 +1,43 @@
+// services/api.js (Updated)
 import axios from 'axios';
 
 const API_URL = 'http://localhost:5000/api';
 
-export const packageService = {
-  getAllPackages: () => axios.get(`${API_URL}/packages`),
-  getPackageById: (id) => axios.get(`${API_URL}/packages/${id}`),
-  createPackage: (packageData, username, password) => 
-    axios.post(`${API_URL}/packages`, packageData, {
-      headers: { username, password }
-    }),
-  updatePackage: (id, packageData, username, password) => 
-    axios.put(`${API_URL}/packages/${id}`, packageData, {
-      headers: { username, password }
-    }),
-  deletePackage: (id, username, password) => 
-    axios.delete(`${API_URL}/packages/${id}`, {
-      headers: { username, password }
-    })
+// Helper function to create authenticated axios instance
+const createAuthenticatedAxios = (username, password) => {
+  return axios.create({
+    baseURL: API_URL,
+    headers: {
+      Authorization: `Basic ${btoa(`${username}:${password}`)}`
+    }
+  });
 };
 
-export const bookingService = {
-  createBooking: (bookingData) => 
-    axios.post(`${API_URL}/bookings`, bookingData),
-  getAllBookings: () => axios.get(`${API_URL}/bookings`)
+export const adminService = {
+  // Admin package operations
+  getAllPackages: (username, password) => {
+    const authAxios = createAuthenticatedAxios(username, password);
+    return authAxios.get('/admin/packages');
+  },
+
+  createPackage: (packageData, username, password) => {
+    const authAxios = createAuthenticatedAxios(username, password);
+    return authAxios.post('/admin/packages', packageData);
+  },
+
+  updatePackage: (id, packageData, username, password) => {
+    const authAxios = createAuthenticatedAxios(username, password);
+    return authAxios.put(`/admin/packages/${id}`, packageData);
+  },
+
+  deletePackage: (id, username, password) => {
+    const authAxios = createAuthenticatedAxios(username, password);
+    return authAxios.delete(`/admin/packages/${id}`);
+  },
+
+  // Admin bookings operations
+  getAllBookings: (username, password) => {
+    const authAxios = createAuthenticatedAxios(username, password);
+    return authAxios.get('/admin/bookings');
+  }
 };
